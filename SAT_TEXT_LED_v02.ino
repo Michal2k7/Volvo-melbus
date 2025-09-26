@@ -959,26 +959,60 @@ void toggleOutput(byte pinNumber) {
 }
 
 //Simulate button presses on the BT module. 200 ms works good. Less is not more in this case...
-void nextTrack() {
-  digitalWrite(nextPin, HIGH);
+
+
+
+
+// more generic approach (thanks to AlikornSause)
+
+
+
+
+void simulateButton(const byte pin){
+  digitalWrite(pin, HIGH);
   for (byte i = 0; i < 200; i++)
     delayMicroseconds(1000);
-  digitalWrite(nextPin, LOW);
+  digitalWrite(pin, LOW);
+}
+
+void nextTrack() {
+  simulateButton(nextPin);
 }
 
 void prevTrack() {
-  digitalWrite(prevPin, HIGH);
-  for (byte i = 0; i < 200; i++)
-    delayMicroseconds(1000);
-  digitalWrite(prevPin, LOW);
+  simulateButton(prevPin);
 }
 
 void play() {
-  digitalWrite(playPin, HIGH);
-  for (byte i = 0; i < 200; i++)
-    delayMicroseconds(1000);
-  digitalWrite(playPin, LOW);
+  simulateButton(playPin);
 }
+
+
+
+
+
+
+
+// void nextTrack() {
+//   digitalWrite(nextPin, HIGH);
+//   for (byte i = 0; i < 200; i++)
+//     delayMicroseconds(1000);
+//   digitalWrite(nextPin, LOW);
+// }
+
+// void prevTrack() {
+//   digitalWrite(prevPin, HIGH);
+//   for (byte i = 0; i < 200; i++)
+//     delayMicroseconds(1000);
+//   digitalWrite(prevPin, LOW);
+// }
+
+// void play() {
+//   digitalWrite(playPin, HIGH);
+//   for (byte i = 0; i < 200; i++)
+//     delayMicroseconds(1000);
+//   digitalWrite(playPin, LOW);
+// }
 
 //Happy listening AND READING, hacker!
 
