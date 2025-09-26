@@ -174,6 +174,77 @@ const byte commands[][6] = {
 };
 
 const byte listLen = 19; //how many rows in the above array
+/*
+---------------------------------- DEFINITIONS & COMMANDS EXPLANATION ----------------------------------
+
+This section defines all constants, pins, variables, and known MELBUS commands.
+
+1. Pin definitions:
+   - MELBUS uses 3 lines: CLOCK (D2), DATA (D3), BUSY (D4).
+   - Other Arduino pins are assigned for extra controls:
+       next/prev/play buttons, volume up/down, and LED outputs (RGB + misc).
+
+2. Global/volatile variables:
+   - melbus_ReceivedByte: stores last received byte (set by interrupt).
+   - melbus_Bitposition: tracks which bit is being read (7 → 0).
+   - byteIsRead: flag set true when a full byte is received.
+   - byteToSend: used globally to hold the next byte for sending.
+   - Connected: tracks if HU has accepted/init’d this device.
+
+3. MELBUS IDs:
+   - BASE_ID: used when HU sends commands.
+   - RESPONSE_ID: used when this device responds.
+   - MASTER_ID: used during master handshake.
+
+4. Text handling:
+   - textHeader: header bytes for text messages.
+   - textRow: row number on HU display to use for custom text.
+   - customText: a custom message (36 chars max).
+   - textLine[4][36]: startup text lines shown by default.
+
+5. Initialization sequences:
+   - C1_Init, C2_Init, C3_Init arrays: 
+     Predefined byte sequences that HU expects at different init stages.
+
+6. Commands definition:
+   - Each command is defined as a byte array, where:
+       First byte = length of command,
+       Following bytes = actual MELBUS command sequence.
+   - Examples:
+       MRB_1: Master Request Broadcast
+       MI: Main Init
+       CMD_1..3: Various control commands
+       C1/C2/C3: Init responses with text/data
+       C5_1: Text response with free text field
+       BTN: Handles HU button presses
+       NXT/PRV/SCN: Track control commands
+
+7. Command list:
+   - commands[][] stores all defined commands.
+   - listLen keeps track of how many commands exist (19 total).
+   - Incoming bytes are matched against this list during loop().
+
+In short:
+- This section sets up hardware pin roles,
+- Defines variables for communication,
+- Provides init sequences and responses,
+- Lists all recognized HU command patterns.
+
+----------------------------------------------------------------------------------------
+*/
+
+
+
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+
+
 
 
 void setup() {
@@ -208,6 +279,60 @@ void setup() {
   //Call function that tells HU that we want to register a new device
   melbusInitReq();
 }
+
+/*
+---------------------------------- SETUP EXPLANATION ----------------------------------
+
+This runs once when Arduino powers up. It prepares pins, disables unused features, 
+and starts communication with the HU.
+
+1. Disable timer0 interrupt:
+   - Timer0 normally runs millis()/delay().
+   - We don’t need it and it slows down communication, so we turn it off.
+
+2. Configure MELBUS pins:
+   - MELBUS lines (DATA, CLOCK, BUSY) are inputs with pullups (idle HIGH).
+   - Control pins (next, prev, play) are outputs, set LOW (inactive).
+   - Also set analog pins A0–A6 (14–20) as outputs and LOW to avoid noise.
+
+3. Start Serial (debug):
+   - Begin at 115200 baud for logging/debugging.
+   - Print "Calling HU" (for debug only – serial prints slow things down).
+
+4. Enable interrupts on MELBUS clock:
+   - Attach an interrupt handler (MELBUS_CLOCK_INTERRUPT) to the MELBUS clock line.
+   - This means whenever the clock goes HIGH, the interrupt will capture bits/bytes.
+
+5. Send initial registration request:
+   - Call melbusInitReq() to let the HU know we want to register as a new device.
+
+In short:
+- Disable timer0 for speed,
+- Set up MELBUS and control pins,
+- Enable debug serial,
+- Attach clock interrupt,
+- Ask HU to register us.
+
+----------------------------------------------------------------------------------------
+*/
+
+
+
+
+
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+//####################################################################################
+
+
+
+
+
 
 //Main loop
 void loop() {
@@ -601,6 +726,45 @@ void loop() {
 
   flag = false; //don't print during next loop. Wait for new message to arrive first.
 }
+
+/*
+---------------------------------- MAIN LOOP EXPLANATION ----------------------------------
+
+This loop handles communication over the MELBUS protocol (used by the head unit HU).  
+The flow works like this:
+
+1. Check if the BUSY line is active (LOW = HU is sending data).
+   - While BUSY is LOW, we listen for incoming bytes.
+
+2. When a byte is received:
+   - Copy it into a local variable (lastByte).
+   - Store it in melbus_log[] (keeps a record of the whole transmission).
+   - Compare the received byte with all known command patterns in commands[][].
+     -> If it matches the expected position of a command, increase its "matching" counter.
+
+3. If a complete command is detected:
+   - A switch(cmd) decides what to do depending on which command it was.
+   - Each case sends the required response bytes back to the HU (using SendByteToMelbus()).
+   - Some commands also trigger extra functions (SendText, toggle LEDs, nextTrack, prevTrack, etc.).
+   - After a valid command is handled, mark "Connected = true" and break.
+
+4. When HU stops talking (BUSY goes HIGH again):
+   - Print the log of received bytes to Serial (for debugging).
+   - Reset byte counters and matching[] for the next transmission.
+
+5. Extra tasks while bus is idle:
+   - If data is available on Serial, trigger reqMaster() to request text sending.
+   - If runOnce reaches 1, also call reqMaster() (first-time setup).
+
+6. Finally, reset the flag so we only print once per transmission cycle.
+
+In short:
+- While HU talks: receive bytes, check for command matches, respond accordingly.
+- When HU stops: print log, reset counters, possibly send our own requests.
+
+--------------------------------------------------------------------------------------------
+*/
+
 
 //Notify HU that we want to trigger the first initiate procedure to add a new device (CD-CHGR) by pulling BUSY line low for 1s
 void melbusInitReq() {
